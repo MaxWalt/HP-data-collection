@@ -117,12 +117,38 @@ with st.sidebar:
                 "&approval_prompt=force"
                 "&scope=activity:read_all"
             )
-            st.link_button("Connect with Strava", auth_url, use_container_width=True)
+            st.link_button("1 · Authorize on Strava", auth_url, use_container_width=True)
             st.caption(
-                "Your Strava app's **Authorization Callback Domain** must be set to `localhost`."
+                "After clicking Authorize, your browser will show an error page — "
+                "that's normal. **Copy the full URL** from the address bar and paste it below."
             )
+            pasted = st.text_input("2 · Paste the redirect URL here", key="pasted_url")
+            if pasted:
+                from urllib.parse import urlparse, parse_qs
+                qs = parse_qs(urlparse(pasted).query)
+                code = qs.get("code", [None])[0]
+                if code:
+                    with st.spinner("Exchanging code for token..."):
+                        resp = requests.post(STRAVA_TOKEN_URL, data={
+                            "client_id": client_id,
+                            "client_secret": client_secret,
+                            "code": code,
+                            "grant_type": "authorization_code",
+                        })
+                    if resp.ok:
+                        data = resp.json()
+                        st.session_state["strava_refresh_token"] = data["refresh_token"]
+                        athlete = data.get("athlete", {})
+                        st.session_state["strava_athlete"] = (
+                            f"{athlete.get('firstname','')} {athlete.get('lastname','')}".strip()
+                        )
+                        st.rerun()
+                    else:
+                        st.error(f"Token exchange failed: {resp.text}")
+                else:
+                    st.error("Could not find a 'code' in that URL. Make sure you copied the full address bar URL.")
         else:
-            st.info("Enter Client ID and Secret to enable one-click Strava login.")
+            st.info("Enter Client ID and Secret to enable Strava login.")
 
     st.divider()
 
