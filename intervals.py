@@ -53,8 +53,8 @@ def _extract_hr_zones(detail, act_id):
     return rows
 
 
-def collect(api_key, athlete_id, max_activities=None):
-    print("Connecting to intervals.icu...")
+def collect(api_key, athlete_id, max_activities=None, log=print):
+    log("Connecting to intervals.icu...")
     session = _make_session(api_key)
 
     # Verify credentials with a lightweight call
@@ -62,22 +62,22 @@ def collect(api_key, athlete_id, max_activities=None):
         _get(session, f"/athlete/{athlete_id}")
     except requests.HTTPError as exc:
         if exc.response.status_code == 401:
-            raise SystemExit("intervals.icu: invalid API key or athlete ID (401 Unauthorized)")
+            raise ValueError("Invalid API key or athlete ID (401 Unauthorized)")
         raise
 
-    print("Fetching activity list...")
+    log("Fetching activity list...")
     params = {"oldest": "2000-01-01", "newest": "2099-12-31"}
     if max_activities:
         params["limit"] = max_activities
     activities = _get(session, f"/athlete/{athlete_id}/activities", **params)
-    print(f"Found {len(activities)} activities")
+    log(f"Found {len(activities)} activities")
 
     all_activities, all_laps, all_zones = [], [], []
 
     for i, act in enumerate(activities):
         act_id = act.get("id")
         name = act.get("name", str(act_id))
-        print(f"  [{i+1}/{len(activities)}] {name}")
+        log(f"[{i+1}/{len(activities)}] {name}")
 
         try:
             detail = _get(session, f"/activity/{act_id}")

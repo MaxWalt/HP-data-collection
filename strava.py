@@ -42,23 +42,23 @@ def _fetch_all_activities(session, max_activities):
     return activities
 
 
-def collect(client_id, client_secret, refresh_token, max_activities=None):
-    print("Authenticating with Strava...")
+def collect(client_id, client_secret, refresh_token, max_activities=None, log=print):
+    log("Authenticating with Strava...")
     token = _get_access_token(client_id, client_secret, refresh_token)
 
     session = requests.Session()
     session.headers["Authorization"] = f"Bearer {token}"
 
-    print("Fetching activity list...")
+    log("Fetching activity list...")
     activities = _fetch_all_activities(session, max_activities)
-    print(f"Found {len(activities)} activities")
+    log(f"Found {len(activities)} activities")
 
     all_activities, all_laps, all_zones = [], [], []
 
     for i, act in enumerate(activities):
         act_id = act["id"]
         name = act.get("name", str(act_id))
-        print(f"  [{i+1}/{len(activities)}] {name}")
+        log(f"[{i+1}/{len(activities)}] {name}")
 
         detail = _get(session, f"/activities/{act_id}")
 
